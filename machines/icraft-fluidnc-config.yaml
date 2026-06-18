@@ -1,0 +1,107 @@
+# FluidNC config for the LOKLiK iCraft
+# ------------------------------------
+# Reproduces the factory motion tune from the stock Grbl_ESP32 firmware
+# (src/Device/SJMachine.h, "LOKLIK_CRAFTER_1") on FluidNC.
+#
+# FluidNC runs on the ESP32 ONLY. Flash it to the iCraft's existing ESP32 or a
+# fresh ESP32 dev module wired to the same drivers. It will NOT run on an STM32
+# (e.g. Creality boards) or a Mach3 setup — use the Marlin config for those.
+#
+# Drivers are TMC2209 on a shared UART. Verify pins against your board before
+# powering motors. The laser/PWM pin is NOT defined in the factory source — set
+# `pwm:` below to your actual laser pin if you run one.
+
+name: "LOKLiK iCraft"
+board: "ESP32"
+
+stepping:
+  engine: I2S_static
+  idle_ms: 255          # hold motors (matches factory $1=255)
+  pulse_us: 4
+  dir_delay_us: 1
+  disable_delay_us: 0
+
+# Shared TMC2209 UART (UART1: RX=GPIO21, TX=GPIO22)
+uart1:
+  txd_pin: gpio.22
+  rxd_pin: gpio.21
+  baud: 115200
+  mode: 8N1
+
+axes:
+  shared_stepper_disable_pin: gpio.23
+
+  x:
+    steps_per_mm: 160
+    max_rate_mm_per_min: 5000
+    acceleration_mm_per_sec2: 2000
+    max_travel_mm: 330
+    homing:
+      cycle: 1
+      positive_direction: false
+      mpos_mm: 0
+      feed_mm_per_min: 500
+      seek_mm_per_min: 3000
+      settle_ms: 250
+      pulloff_mm: 3
+    motor0:
+      limit_neg_pin: gpio.25
+      hard_limits: false
+      tmc_2209:
+        uart_num: 1
+        addr: 0
+        r_sense_ohms: 0.110
+        run_amps: 0.8
+        hold_amps: 0.5
+        microsteps: 16
+        direction_invert: true     # dir invert mask bit for X
+        step_pin: gpio.19
+        direction_pin: gpio.18
+
+  y:
+    steps_per_mm: 188.4
+    max_rate_mm_per_min: 3000
+    acceleration_mm_per_sec2: 500
+    max_travel_mm: 100000          # roll feed — effectively unlimited
+    motor0:
+      tmc_2209:
+        uart_num: 1
+        addr: 1
+        r_sense_ohms: 0.110
+        run_amps: 0.9
+        hold_amps: 0.5
+        microsteps: 16
+        direction_invert: false
+        step_pin: gpio.2
+        direction_pin: gpio.4
+
+  z:
+    steps_per_mm: 90
+    max_rate_mm_per_min: 5000
+    acceleration_mm_per_sec2: 1000
+    max_travel_mm: 50
+    motor0:
+      tmc_2209:
+        uart_num: 1
+        addr: 2
+        r_sense_ohms: 0.110
+        run_amps: 0.9
+        hold_amps: 0.5
+        microsteps: 16
+        direction_invert: true     # dir invert mask bit for Z
+        step_pin: gpio.33
+        direction_pin: gpio.32
+
+# Laser. Factory firmware sets laser mode on @ 20 kHz, S-max 1000, but does NOT
+# define the output pin. Set output_pin to your real laser/PWM pin to enable.
+PWM:
+  pwm_hz: 20000
+  #output_pin: gpio.NN
+  enable_pin: NO_PIN
+  disable_with_s0: true
+  s0_with_disable: true
+  tool_num: 0
+  speed_map: 0=0% 1000=100%
+
+start:
+  must_home: false        # IR home sensor unreliable on the documented unit
