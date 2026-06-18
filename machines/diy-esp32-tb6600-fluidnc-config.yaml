@@ -1,0 +1,104 @@
+# FluidNC config — bare ESP32 + TB6600 external drivers (3-axis)
+# ------------------------------------------------------------------
+# Dumb step/dir drivers (TB6600) => FluidNC "stepstick" motor type, no TMC/UART.
+# Wiring: COMMON-ANODE. All PUL+/DIR+/ENA+ tied to ESP32 3.3V; ESP32 sinks the
+# PUL-/DIR- pins. Because "active" = pin LOW, the step/dir pins are inverted with
+# ':low'. See tb6600-wiring.md.
+#
+# >>> THINGS YOU MUST SET <<<
+#   1. steps_per_mm per axis (formula below)
+#   2. microstepping on each TB6600's DIP switches (must match the math)
+#   3. current DIP switches to your motors' rated amps
+#
+# steps_per_mm = (motor_steps_per_rev * microsteps) / travel_per_motor_rev_mm
+#   1.8° motor = 200 steps/rev. Examples @ 16 microsteps (3200 steps/rev):
+#     GT2 belt, 20T pulley (40 mm/rev) -> 3200/40  =  80
+#     leadscrew TR8x8   (8 mm/rev)     -> 3200/8   = 400
+#     leadscrew TR8x2   (2 mm/rev)     -> 3200/2   = 1600
+#   (Reusing the LOKLiK iCraft mechanics @16 microsteps? Use X160 / Y188.4 / Z90.)
+
+name: "ESP32 + TB6600 CNC"
+board: "ESP32 DevKit (WROOM-32)"
+
+stepping:
+  engine: RMT          # direct GPIO step/dir (not I2S shift-register)
+  idle_ms: 250         # ms to hold motors after a move; 255 = always hold
+  pulse_us: 4          # TB6600 optos are slow — 4-5us keeps pulses clean
+  dir_delay_us: 2
+  disable_delay_us: 0
+
+axes:
+  # ENA is left disconnected (motors always enabled) to dodge enable-polarity
+  # confusion. To wire ENA later, uncomment and confirm your driver's polarity:
+  # shared_stepper_disable_pin: gpio.23:low
+
+  x:
+    steps_per_mm: 80            # <-- SET ME
+    max_rate_mm_per_min: 4000
+    acceleration_mm_per_sec2: 800
+    max_travel_mm: 300          # <-- SET ME
+    homing:
+      cycle: 1
+      positive_direction: false
+      mpos_mm: 0
+      feed_mm_per_min: 300
+      seek_mm_per_min: 2000
+      settle_ms: 250
+    motor0:
+      limit_neg_pin: gpio.25:high:pu   # switch to GND, internal pull-up
+      hard_limits: false
+      pulloff_mm: 1.5
+      stepstick:
+        step_pin: gpio.16:low          # :low = active-low (common-anode sink)
+        direction_pin: gpio.17         # add ':low' if this axis runs backwards
+
+  y:
+    steps_per_mm: 80            # <-- SET ME
+    max_rate_mm_per_min: 4000
+    acceleration_mm_per_sec2: 800
+    max_travel_mm: 300          # <-- SET ME
+    homing:
+      cycle: 2
+      positive_direction: false
+      mpos_mm: 0
+      feed_mm_per_min: 300
+      seek_mm_per_min: 2000
+      settle_ms: 250
+    motor0:
+      limit_neg_pin: gpio.26:high:pu
+      hard_limits: false
+      pulloff_mm: 1.5
+      stepstick:
+        step_pin: gpio.18:low
+        direction_pin: gpio.19
+
+  z:
+    steps_per_mm: 400           # <-- SET ME (leadscrew Z usually higher)
+    max_rate_mm_per_min: 1500
+    acceleration_mm_per_sec2: 400
+    max_travel_mm: 80           # <-- SET ME
+    homing:
+      cycle: 0                  # 0 = home first / alone (typical for Z)
+      positive_direction: true  # Z usually homes UP (+) ; flip if needed
+      mpos_mm: 0
+      feed_mm_per_min: 200
+      seek_mm_per_min: 1000
+      settle_ms: 250
+    motor0:
+      limit_neg_pin: gpio.27:high:pu
+      hard_limits: false
+      pulloff_mm: 1.5
+      stepstick:
+        step_pin: gpio.21:low
+        direction_pin: gpio.22
+
+# Optional: PWM laser / spindle on a free pin. Uncomment + set the pin.
+# PWM:
+#   pwm_hz: 5000
+#   output_pin: gpio.32
+#   enable_pin: NO_PIN
+#   disable_with_s0: true
+#   speed_map: 0=0% 255=100%
+
+start:
+  must_home: false   # set true once your limit switches are in and tested

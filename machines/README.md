@@ -8,6 +8,8 @@ the factory firmware source.
 | [`icraft-pinmap-and-tune.md`](icraft-pinmap-and-tune.md) | The factory pin map, TMC2209 settings, and motion tune (steps/mm, rates, accel, homing) pulled from `src/Device/SJMachine.h`. Includes the equivalent grbl `$$` settings. |
 | [`icraft-fluidnc-config.yaml`](icraft-fluidnc-config.yaml) | Ready-to-use **FluidNC** config reproducing the factory tune. ESP32 only. |
 | [`marlin-cutter-config.md`](marlin-cutter-config.md) | Notes for running the machine on **Marlin** (e.g. a Creality 4.2.7 / STM32 board). |
+| [`diy-esp32-tb6600-fluidnc-config.yaml`](diy-esp32-tb6600-fluidnc-config.yaml) | FluidNC config for a **bare ESP32 + TB6600** external-driver build (3-axis). |
+| [`diy-esp32-tb6600-wiring.md`](diy-esp32-tb6600-wiring.md) | Common-anode ESP32→TB6600 wiring, pin map, and bring-up steps. |
 
 ## Which firmware should I use?
 
