@@ -16,6 +16,7 @@ ready-to-use FluidNC / Marlin configs for repairs and conversions.
 |---|---|
 | `Grbl_Esp32/`, `libraries/`, `platformio.ini`, build scripts | Clean, buildable mirror of the LOKLiK/HKsjtech source (original commit history preserved) |
 | [`machines/`](machines/) | iCraft pin map + motion tune, and **FluidNC** + **Marlin** configs |
+| [`fluidnc-firmware/`](fluidnc-firmware/) | Pre-built **FluidNC v4.0.3** ESP32 images + upload tools — flash these to convert the iCraft to FluidNC |
 | [`firmware-dumps/`](firmware-dumps/) | 8 FlashTool firmware versions, full 8 MB device backup, original NVS, partition tables |
 | [`evidence/`](evidence/) | Raw GitHub API / Wayback data backing EVIDENCE.md |
 | [`STORY.md`](STORY.md) / [`EVIDENCE.md`](EVIDENCE.md) | The backstory and the receipts |
@@ -49,6 +50,30 @@ esptool.py write_flash 0x10000 firmware-dumps/flashtool-versions/firmware_v03.bi
 
 > **Back up your device before writing anything.** You are responsible for what you
 > flash to your own hardware.
+
+## Convert it to FluidNC
+
+[FluidNC](https://github.com/bdring/FluidNC) is the modern successor to
+`Grbl_ESP32` — same ESP32, configured by a YAML file (no recompile) with a WiFi
+web UI. Pre-built v4.0.3 ESP32 images are in
+[`fluidnc-firmware/`](fluidnc-firmware/), and the matching iCraft config (factory
+motion tune, no homing/sensors) is
+[`machines/icraft-bareboard-nohoming.yaml`](machines/icraft-bareboard-nohoming.yaml).
+
+**Full step-by-step (backup → erase → flash → config → WiFi): [FLASH_FLUIDNC.md](FLASH_FLUIDNC.md).**
+
+Short version:
+
+```sh
+# 0. back up stock first!
+python -m esptool --port COM19 --baud 921600 read-flash 0 ALL stock_backup.bin
+# 1. erase
+python -m esptool --chip esp32 --port COM19 --baud 921600 erase-flash
+# 2. flash firmware + 3. filesystem  (see FLASH_FLUIDNC.md for the full commands)
+#    bootloader@0x1000  partitions@0x8000  boot_app0@0xe000  firmware@0x10000  littlefs@0x3d0000
+# 4. upload the machine config over USB serial (XMODEM)
+python fluidnc-firmware/tools/fnc_upload.py machines/icraft-bareboard-nohoming.yaml config.yaml
+```
 
 ## License
 
