@@ -1,0 +1,83 @@
+# FluidNC - LOKLiK iCraft, BARE BOARD / NO SENSORS
+# Original iCraft ESP32, motors + power only. No homing, no limits, no laser.
+# Values verified vs factory source Grbl_Esp32/src/Device/SJMachine.h
+# (MACHINE_NAME LOKLIK_CRAFTER_1). Flash the FluidNC esp32 (wifi) build.
+# NOTE: FluidNC's YAML parser dislikes inline comments and direction_invert keys.
+#   Direction is inverted with a :low modifier on the direction pin.
+#   X and Z are inverted (factory dir-invert mask = 5 = binary 101).
+
+name: "LOKLiK iCraft (bare)"
+board: "ESP32"
+
+stepping:
+  engine: RMT
+  idle_ms: 255
+  pulse_us: 4
+  dir_delay_us: 1
+  disable_delay_us: 0
+
+uart1:
+  txd_pin: gpio.22
+  rxd_pin: gpio.21
+  baud: 115200
+  mode: 8N1
+
+axes:
+  shared_stepper_disable_pin: gpio.23
+
+  x:
+    steps_per_mm: 160
+    max_rate_mm_per_min: 5000
+    acceleration_mm_per_sec2: 2000
+    max_travel_mm: 330
+    motor0:
+      tmc_2209:
+        uart_num: 1
+        addr: 0
+        r_sense_ohms: 0.100
+        run_amps: 0.8
+        hold_amps: 0.5
+        microsteps: 16
+        step_pin: gpio.19
+        direction_pin: gpio.18:low
+
+  y:
+    steps_per_mm: 188.4
+    max_rate_mm_per_min: 3000
+    acceleration_mm_per_sec2: 500
+    max_travel_mm: 1000
+    motor0:
+      tmc_2209:
+        uart_num: 1
+        addr: 1
+        r_sense_ohms: 0.100
+        run_amps: 0.9
+        hold_amps: 0.5
+        microsteps: 16
+        step_pin: gpio.2
+        direction_pin: gpio.4
+
+  z:
+    steps_per_mm: 90
+    max_rate_mm_per_min: 5000
+    acceleration_mm_per_sec2: 1000
+    max_travel_mm: 50
+    motor0:
+      tmc_2209:
+        uart_num: 1
+        addr: 2
+        r_sense_ohms: 0.100
+        run_amps: 0.9
+        hold_amps: 0.5
+        microsteps: 16
+        step_pin: gpio.33
+        direction_pin: gpio.32:low
+
+# Front-panel buttons. gpio.35 (SEEK_BOX) read ACTIVE at boot (floats, no pull) so
+# reset_pin is left off until metered. 13 has an internal pullup; 36 read idle-high.
+control:
+  cycle_start_pin: gpio.13:low:pu
+  feed_hold_pin: gpio.36:low
+
+start:
+  must_home: false
