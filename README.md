@@ -10,6 +10,37 @@ ready-to-use FluidNC / Marlin configs for repairs and conversions.
 > customer would find it. This repo surfaces it. Full story in
 > **[STORY.md](STORY.md)**; the verifiable record in **[EVIDENCE.md](EVIDENCE.md)**.
 
+---
+
+## 🚨 Call for Community Help & Contributions
+
+The core motion system works — **this project now needs your help to map the rest of the hardware.**
+
+**What we already know** (reverse-engineered from the factory `Grbl_Esp32` source, `src/Device/SJMachine.h`):
+
+| Function | Pin | Status |
+|---|---|---|
+| X limit / home | `GPIO25` | Known — but the IR home sensor is commonly **dead** (surge / teardown); verify or replace before enabling X homing |
+| Z limit | `GPIO39` | Known (input-only pin, fine as a limit) |
+| Y limit | — | Factory has none (Y is continuous material feed) |
+| Cycle-start button | `GPIO13` | Known (internal pull-up) |
+| Feed-hold button | `GPIO36` | Known |
+| Seek / box button | `GPIO35` | Known (floats, reads active at boot) |
+
+These are mapped **but disabled** in the configs (`must_home: false`, `hard_limits: false`) for safe bring-up — not because they're unknown.
+
+**What we still need — this is where you come in:**
+- **Mat / material-presence sensor** and **tool-depth sensor** — not in the factory pin list; trace them with a multimeter / logic analyzer.
+- **Confirm or repair the X IR home sensor** so X homing can be re-enabled.
+- Any other limit / sensor inputs on your specific iCraft revision.
+
+### How to help
+- **Trace it** — meter the sensor/switch back to an ESP32 GPIO.
+- **Submit a PR** — add a sensor-enabled YAML to the [`machines/`](machines/) folder.
+- **Open an issue** — report bugs or share machine-behavior insights.
+
+---
+
 ## Contents
 
 | Path | What it is |

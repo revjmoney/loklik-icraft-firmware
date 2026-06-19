@@ -39,7 +39,7 @@ axes:
         hold_amps: 0.5
         microsteps: 16
         step_pin: gpio.19
-        direction_pin: gpio.18:low
+        direction_pin: gpio.18   # un-inverted 2026-06-19: X jogged backwards with :low on real hardware
 
   y:
     steps_per_mm: 188.4

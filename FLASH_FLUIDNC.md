@@ -1,5 +1,11 @@
 # Flashing FluidNC onto the iCraft ESP32
 
+> 🚨 **Call for help:** the bare config below runs motors + buttons only. The limit/home
+> pins are already known (X `GPIO25` — often dead, Z `GPIO39`, Y none), but the **mat /
+> material sensor** and **tool-depth sensor** still need tracing. Help map them — PR a
+> sensor-enabled YAML to [`machines/`](machines/) or open an issue. Full map + details in
+> the [main README](README.md#-call-for-community-help--contributions).
+
 Replace the stock `Grbl_ESP32` firmware with **FluidNC v4.0.3** using `esptool`.
 This was done on a real iCraft board (`ESP32-D0WD-V3`, 8 MB flash). FluidNC is
 then configured with a YAML file — see
