@@ -64,7 +64,7 @@ CUTOFF_DEFAULT = 20.0      # corner angle (deg) above which a swivel arc is adde
 # field-dialed on this machine's soft-spring holder -- the others are sane
 # starting points; tune each on a scrap depth-grid (they're holder-specific).
 MATERIALS = {
-    "chrome":      dict(z_down=-0.040, passes=3, cut_feed=30),   # field-dialed
+    "chrome":      dict(z_down=-0.080, passes=4, cut_feed=30),   # field-dialed: -.080"/4 on the soft spring holder
     "vinyl":       dict(z_down=-0.020, passes=1, cut_feed=30),   # std cal sign vinyl (est)
     "htv":         dict(z_down=-0.035, passes=2, cut_feed=25),   # heat-transfer vinyl (est)
     "holographic": dict(z_down=-0.040, passes=2, cut_feed=20),   # slow + double cut (est)

@@ -44,7 +44,7 @@ Pick one and it fills depth / passes / feed; explicit flags still override.
 
 | Preset | z_down | passes | feed | Notes |
 |---|---|---|---|---|
-| `chrome` | −0.040″ | **3** | 30 ipm | **field‑dialed** on this machine |
+| `chrome` | −0.080″ | **4** | 30 ipm | **field‑dialed** on this machine |
 | `vinyl` | −0.020″ | 1 | 30 ipm | std cal sign vinyl (starting point) |
 | `htv` | −0.035″ | 2 | 25 ipm | heat‑transfer (starting point) |
 | `holographic` | −0.040″ | 2 | 20 ipm | slow + double cut (starting point) |
