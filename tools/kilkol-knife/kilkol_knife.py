@@ -58,21 +58,34 @@ def _val(axis, s):
 
 # ------------------------------- parsing --------------------------------------
 def parse_strokes(text):
-    """LightBurn laser g-code -> list of strokes.
+    """LightBurn laser g-code -> list of strokes (absolute, millimeters).
 
-    Each stroke is a list of (x, y) points: a pen-DOWN polyline that starts at
-    the point where the head plunges. Tracks the modal motion mode (G0/G1) and
-    laser power (S, M5); a move is 'cutting' iff it's a feed move with power on.
-    Works whether LightBurn emits M3 (constant) or M4 (dynamic) power.
+    Each stroke is a list of (x, y) points in mm: a pen-DOWN polyline that
+    starts where the head plunges. Handles all the LightBurn output flavors:
+      * units:    G20 (inch) is converted to mm; G21 stays mm.
+      * distance: G91 (relative / 'current position' mode) is accumulated to
+                  absolute; G90 stays absolute.
+      * power:    M3 (constant) or M4 (dynamic); cutting iff a G1 feed move has
+                  power S>0. G0 rapids and S0/M5 are travels (pen up).
     """
     strokes, cur = [], None
     pos = [0.0, 0.0]
     motion, power = 0, 0.0
+    absolute = True
+    scale = 1.0                       # mm per file unit (25.4 if inches)
     for raw in text.splitlines():
         s = raw.strip()
         if not s or s[0] in ';(%':
             continue
         u = s.upper()
+        if re.search(r'\bG20\b', u):
+            scale = 25.4
+        if re.search(r'\bG21\b', u):
+            scale = 1.0
+        if re.search(r'\bG90\b', u):
+            absolute = True
+        if re.search(r'\bG91\b', u):
+            absolute = False
         if re.search(r'\bG0?0\b', u):
             motion = 0
         if re.search(r'\bG0?1\b', u):
@@ -85,8 +98,12 @@ def parse_strokes(text):
         x, y = _val('X', u), _val('Y', u)
         if x is None and y is None:
             continue
-        nx = x if x is not None else pos[0]
-        ny = y if y is not None else pos[1]
+        if absolute:
+            nx = x * scale if x is not None else pos[0]
+            ny = y * scale if y is not None else pos[1]
+        else:                          # relative: accumulate deltas
+            nx = pos[0] + (x * scale if x is not None else 0.0)
+            ny = pos[1] + (y * scale if y is not None else 0.0)
         cutting = (motion == 1) and (power > 0)
         if cutting:
             if cur is None:

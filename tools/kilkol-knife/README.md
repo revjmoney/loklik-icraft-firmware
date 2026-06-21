@@ -64,9 +64,11 @@ python kilkol_knife.py input.gc output.gc --mode knife-comp --offset 0.25 --over
 ## LightBurn side
 - Set your cut layers to **Line mode** (NOT Fill/scan — Fill rasterizes, useless
   for a knife).
-- **File → Save GCode** (a GRBL device profile, units **mm**).
-- Power/speed in LightBurn don't matter — this tool ignores them and uses your
-  `--cut-feed` / `--z-down`.
+- **File → Save GCode** (any GRBL device profile).
+- **Units & output mode don't matter** — the tool auto-detects inch (`G20`) vs
+  mm (`G21`) and absolute (`G90`) vs "current position" relative (`G91`), and
+  always writes mm. Power/speed are ignored (it uses your `--cut-feed` /
+  `--z-down`).
 
 ## Tuning the blade (comp mode)
 - **Blade offset ≈ the blade spec:** 45° blade ≈ **0.25 mm**, 60° ≈ **0.5 mm**.
