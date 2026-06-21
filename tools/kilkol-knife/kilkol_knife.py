@@ -47,10 +47,10 @@ VERSION = "1.0"
 MODES = {
     "knife-comp": dict(
         label="Knife - blade compensation", comp=True,
-        z_up=0.400, z_down=-0.100, cut_feed=30, offset=0.010, overcut=0.040),
+        z_up=0.400, z_down=-0.030, cut_feed=30, offset=0.010, overcut=0.040),
     "knife-nocomp": dict(
         label="Knife - no compensation", comp=False,
-        z_up=0.400, z_down=-0.100, cut_feed=30, offset=0.0, overcut=0.0),
+        z_up=0.400, z_down=-0.030, cut_feed=30, offset=0.0, overcut=0.0),
     "pen-draw": dict(
         label="Pen / Marker - draw (no comp)", comp=False,
         z_up=0.400, z_down=-0.020, cut_feed=60, offset=0.0, overcut=0.0),
@@ -188,9 +188,10 @@ def blade_offset(pts, r, cutoff_deg=CUTOFF_DEFAULT, arc_steps=10):
 
 
 # ------------------------------- emit -----------------------------------------
-def convert(text, mode="knife-comp", z_up=Z_UP_DEFAULT, z_down=-0.100,
+def convert(text, mode="knife-comp", z_up=Z_UP_DEFAULT, z_down=-0.030,
             cut_feed=30, z_feed=Z_FEED_DEFAULT, offset=0.010, overcut=0.040,
-            cutoff=CUTOFF_DEFAULT, travel_g0=True, travel_feed=200, home=True):
+            cutoff=CUTOFF_DEFAULT, travel_g0=True, travel_feed=200, home=True,
+            passes=1):
     """Return (gcode_text, n_strokes, n_cuts).
 
     ALL distances are INCHES and the output is G20 (inch) -- the machine + CYD
@@ -222,10 +223,11 @@ def convert(text, mode="knife-comp", z_up=Z_UP_DEFAULT, z_down=-0.100,
             out.append("G0 X%.4f Y%.4f" % (x0 * IN, y0 * IN))
         else:
             out.append("G1 X%.4f Y%.4f F%.2f" % (x0 * IN, y0 * IN, travel_feed))
-        out.append("G1 Z%.4f F%.2f" % (z_down, z_feed))            # down
-        for (x, y) in pts[1:]:
-            out.append("G1 X%.4f Y%.4f F%.2f" % (x * IN, y * IN, cut_feed))
-        out.append("G1 Z%.4f F%.2f" % (z_up, z_feed))              # up
+        out.append("G1 Z%.4f F%.2f" % (z_down, z_feed))            # plunge once
+        for _ in range(max(1, int(passes))):                       # two-cut trick
+            for (x, y) in pts[1:]:
+                out.append("G1 X%.4f Y%.4f F%.2f" % (x * IN, y * IN, cut_feed))
+        out.append("G1 Z%.4f F%.2f" % (z_up, z_feed))              # lift once
         n_cuts += 1
     if home:
         out.append("G0 X0 Y0")
@@ -256,6 +258,8 @@ def run_cli(argv):
     ap.add_argument("--travel-feed", type=float, default=200)
     ap.add_argument("--g1-travel", action="store_true",
                     help="use G1 travels at --travel-feed instead of G0 rapids")
+    ap.add_argument("--passes", type=int, default=1,
+                    help="cut each shape N times (two-cut trick for thick/chrome)")
     ap.add_argument("--no-home", action="store_true")
     a = ap.parse_args(argv)
     d = MODES[a.mode]
@@ -268,7 +272,7 @@ def run_cli(argv):
         offset=a.offset if a.offset is not None else d["offset"],
         overcut=a.overcut if a.overcut is not None else d["overcut"],
         cutoff=a.cutoff, travel_g0=not a.g1_travel, travel_feed=a.travel_feed,
-        home=not a.no_home)
+        home=not a.no_home, passes=a.passes)
     with open(a.input, "r", errors="replace") as f:
         text = f.read()
     gcode, n_strokes, n_cuts = convert(text, **kw)
@@ -341,12 +345,13 @@ def run_gui():
     pf = ttk.LabelFrame(root, text="Parameters", padding=10)
     pf.pack(fill="x", padx=10, pady=6)
     add_row(pf, "Z up (in)", "z_up", Z_UP_DEFAULT, 0)
-    add_row(pf, "Z down / pressure (in)", "z_down", -0.100, 1)
+    add_row(pf, "Z down / pressure (in)", "z_down", -0.030, 1)
     add_row(pf, "Cut feed (in/min)", "cut_feed", 30, 2)
     add_row(pf, "Z feed (in/min)", "z_feed", Z_FEED_DEFAULT, 3)
     add_row(pf, "Blade offset (in)", "offset", 0.010, 4)
     add_row(pf, "Overcut (in)", "overcut", 0.040, 5)
     add_row(pf, "Corner angle (deg)", "cutoff", CUTOFF_DEFAULT, 6)
+    add_row(pf, "Passes (two-cut trick)", "passes", 1, 7)
 
     # ---- log ----
     logf = ttk.Frame(root, padding=10)
@@ -398,7 +403,8 @@ def run_gui():
                 z_feed=float(fields["z_feed"].get()),
                 offset=float(fields["offset"].get()),
                 overcut=float(fields["overcut"].get()),
-                cutoff=float(fields["cutoff"].get()))
+                cutoff=float(fields["cutoff"].get()),
+                passes=int(float(fields["passes"].get())))
             with open(inp, "r", errors="replace") as f:
                 text = f.read()
             gcode, n_strokes, n_cuts = convert(text, **kw)
