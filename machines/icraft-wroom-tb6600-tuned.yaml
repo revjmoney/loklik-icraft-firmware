@@ -61,8 +61,10 @@ axes:
     max_travel_mm: 1000
     motor0:
       stepstick:
+        # Y also ran backwards on this fresh build -> direction inverted (:low).
+        # (Like X, direction is NOT preset on a new TB6600 build -- jog and flip.)
         step_pin: gpio.16:low
-        direction_pin: gpio.17
+        direction_pin: gpio.17:low
 
   z:
     steps_per_mm: 90
