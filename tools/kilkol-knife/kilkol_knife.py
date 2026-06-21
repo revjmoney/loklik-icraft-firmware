@@ -33,21 +33,29 @@ APP_NAME = "KilKol Knife"
 VERSION = "1.0"
 
 # ----------------------------- mode presets -----------------------------------
-# Z convention: Z0 is set at touch-off (e.g. a thin feeler/rolling-paper on top
-# of the loaded vinyl), so Z0 sits a hair ABOVE the film. Travels lift to a
-# positive z_up to clear; cutting drops to a small NEGATIVE z_down to nick the
-# film (kiss cut). Tune z_down on a scrap: shallower if it scores the backing,
-# deeper if it doesn't weed clean.
+# Z convention: Z0 is set at touch-off (a thin feeler -- a Job 1.5 rolling paper
+# -- on top of the loaded vinyl), so Z0 sits a hair ABOVE the film. Travels lift
+# to a positive z_up to clear; cutting drops to a NEGATIVE z_down.
+#
+# SPRING-LOADED blade holder note: z_down sets how hard the spring presses
+# (CUTTING PRESSURE) more than how deep the blade goes -- the blade EXPOSURE /
+# cap setting caps the actual cut depth. So a deeper z_down is mostly "more
+# punch," BUT enough extra pressure can still nudge a spring blade into the
+# backing, so there IS a sweet spot. The dialed default (-0.85) came from a
+# depth-ladder test, just above the factory iCraft's ~0.8 mm plunge. It's fully
+# adjustable per job (GUI "Z down / pressure" field, or CLI --z-down): not
+# weeding = a touch more (deeper); scoring the backing = back off (or reduce
+# blade exposure).
 MODES = {
     "knife-comp": dict(
         label="Knife - blade compensation", comp=True,
-        z_up=2.0, z_down=-0.1, cut_feed=800, offset=0.25, overcut=1.0),
+        z_up=2.0, z_down=-0.85, cut_feed=800, offset=0.25, overcut=1.0),
     "knife-nocomp": dict(
         label="Knife - no compensation", comp=False,
-        z_up=2.0, z_down=-0.1, cut_feed=800, offset=0.0, overcut=0.0),
+        z_up=2.0, z_down=-0.85, cut_feed=800, offset=0.0, overcut=0.0),
     "pen-draw": dict(
         label="Pen / Marker - draw (no comp)", comp=False,
-        z_up=2.0, z_down=-0.2, cut_feed=1500, offset=0.0, overcut=0.0),
+        z_up=2.0, z_down=-0.5, cut_feed=1500, offset=0.0, overcut=0.0),
 }
 Z_UP_DEFAULT = 2.0
 Z_FEED_DEFAULT = 1000
@@ -326,7 +334,7 @@ def run_gui():
     pf = ttk.LabelFrame(root, text="Parameters", padding=10)
     pf.pack(fill="x", padx=10, pady=6)
     add_row(pf, "Z up (mm)", "z_up", Z_UP_DEFAULT, 0)
-    add_row(pf, "Z down / plunge (mm)", "z_down", -0.1, 1)
+    add_row(pf, "Z down / pressure (mm)", "z_down", -0.85, 1)
     add_row(pf, "Cut feed (mm/min)", "cut_feed", 800, 2)
     add_row(pf, "Z feed (mm/min)", "z_feed", Z_FEED_DEFAULT, 3)
     add_row(pf, "Blade offset (mm)", "offset", 0.25, 4)

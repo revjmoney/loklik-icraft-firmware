@@ -88,8 +88,16 @@ quick and repeatable:
 
 That puts `Z0` a hair **above** the film surface, which is why the defaults are:
 - **`z_up` POSITIVE** (`+2`) — lift to clear before traveling.
-- **`z_down` small NEGATIVE** (`-0.1`) — drop through the paper gap + nick the
-  film (kiss cut) without reaching the backing.
+- **`z_down` NEGATIVE** (`-0.85`) — the plunge below `Z0`.
+
+**Spring‑loaded holder?** Then `z_down` mostly sets **cutting pressure**, not
+depth — your **blade exposure** (the holder cap) caps how deep the blade actually
+goes, and the spring keeps pressure steady over an uneven sheet. So a deeper
+`z_down` = *more punch*. (Enough extra still nudges a spring blade toward the
+backing, so there's a sweet spot.) The `-0.85` default came from a depth‑ladder
+test and sits just above the **factory iCraft's ~0.8 mm plunge** — nice
+independent confirmation. **It's fully adjustable per job** — change the
+**"Z down / pressure"** field (GUI) or `--z-down` (CLI); no code editing.
 
 **Safety:** the output always lifts Z to `z_up` **before any X/Y move** (and after
 every cut), so the knife never drags across freshly loaded material — as long as
@@ -107,9 +115,13 @@ every cut), so the knife never drags across freshly loaded material — as long 
   - **Little horns/flares** at corners → offset too **high** → −0.05 mm.
 - **Overcut** ~0.25–1 mm; raise it if closed shapes don't fully separate at the
   start/stop point.
-- **Plunge (`z-down`):** default `-0.1` for the rolling-paper touch-off above.
-  Tune on scrap — **shallower** (`-0.05`) if it scores the backing, **deeper**
-  (`-0.15`) if the vinyl doesn't weed clean.
+- **Plunge / pressure (`z-down`):** default `-0.85` (rolling-paper touch-off +
+  spring holder). Tune on scrap — **shallower** if it scores the backing,
+  **deeper** if it doesn't weed clean.
+- **Dial a new material fast with a depth ladder:** cut a row of small squares,
+  each a step deeper (e.g. `-0.3, -0.4, … -0.9`), then weed them — the
+  **shallowest one that lifts clean (backing intact)** is your number. Beats
+  re-cutting the whole job to guess.
 
 ## How the comp works
 LightBurn outputs flattened line segments, so the compensation reconstructs each
