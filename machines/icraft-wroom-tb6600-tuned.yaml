@@ -47,7 +47,7 @@ axes:
     # 15 in/min (381 mm/min) -- 45 ipm browned out the weak 1.5A brick (the speed
     # draw, NOT WiFi -- WiFi was off). Back to 15 till the 36V/360W is in; then 45.
     max_rate_mm_per_min: 381
-    acceleration_mm_per_sec2: 300
+    acceleration_mm_per_sec2: 200
     max_travel_mm: 330
     motor0:
       stepstick:
@@ -63,7 +63,7 @@ axes:
     # 15 in/min (381 mm/min) -- throttled with X for the weak brick.
     # Target 30 ipm (762) once the 36V/360W PSU is in.
     max_rate_mm_per_min: 381
-    acceleration_mm_per_sec2: 300
+    acceleration_mm_per_sec2: 200
     max_travel_mm: 1000
     motor0:
       stepstick:
