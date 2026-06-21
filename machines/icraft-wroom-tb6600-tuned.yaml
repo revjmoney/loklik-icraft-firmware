@@ -68,8 +68,10 @@ axes:
 
   z:
     steps_per_mm: 90
-    max_rate_mm_per_min: 5000
-    acceleration_mm_per_sec2: 1000
+    # Z = blade leadscrew plunging into material against the holder spring.
+    # Capped to 10 in/min (254 mm/min) + soft accel to stop missed steps.
+    max_rate_mm_per_min: 254
+    acceleration_mm_per_sec2: 200
     # Measured usable Z travel ~0.95 in = 24.13 mm (factory home switches removed,
     # which ate some range). Envelope only -- NOT enforced without a Z home
     # switch + homing + soft_limits.

@@ -104,6 +104,42 @@ A correct cut leaves only a **faint matte scratch / line on the backing liner** 
 exposure. Won't weed clean = not enough (more Z, or add a pass, or fresh/sharper
 blade, or step up to 60°).
 
+## Lost steps & the power supply — size the PSU (this wrecks cuts)
+
+Lost steps *look* like cut problems — shapes don't close, the second pass doesn't
+overlay, corners walk off — but the cause is often **not a cut setting at all.**
+
+**Symptom:** the motor skips steps, worst on **Z plunging into thick stock against
+the spring**, and a little on X/Y when all axes move at once. The cut drifts and
+won't register.
+
+**Root cause we hit: an undersized motor supply.** A **24 V × 1.5 A brick = 36 W**
+cannot feed three TB6600 steppers under simultaneous load. The TB6600 is a chopper
+(supply current ≠ phase current), but the brick still has a hard wattage ceiling —
+blow past it (Z under load + X/Y moving + an accel spike) and the **24 V sags,
+torque collapses, and the motor skips.** Detuning accel/speed *hides* it (slower
+moves draw less peak current) but doesn't fix it.
+
+**Fix:** a properly sized **24 V supply — 6–10 A (≈150–240 W)** for three drivers.
+The cheap 3D-printer / LED-strip switching bricks are ideal. This is the real cure;
+everything below is a band-aid until the supply is right.
+
+**Band-aid (and good practice anyway) — lower rate + accel**, especially on Z, to
+keep peak current under the ceiling. What we set on this machine (FluidNC `$`
+settings, or the axis YAML in `machines/`):
+- **Z:** `max_rate_mm_per_min: 254` (= 10 in/min) and `acceleration_mm_per_sec2: 200`
+  — Z drives a blade against the spring, the highest-load axis.
+- **X:** ease accel (e.g. `2000 → 1500`) and trim top speed if it skips.
+- High **acceleration** is the #1 step-loss trigger — drop it before top speed.
+- Still skipping at gentle accel/speed *with* a good supply? Then it's **driver
+  current** (bump the TB6600 a notch) or **mechanical** (belt tension, roller grip).
+
+> **Two separate power problems — don't confuse them.** *This* one (24 V motor
+> brick too small) causes **lost steps**. A different one — the **ESP32 on USB +
+> WiFi browning out** — causes **controller resets and `?`-in-diamond garbage in
+> the sender**, fixed with a 5 V decoupling cap / solid 5 V feed (or WiFi off).
+> Different rails, different fixes.
+
 ## How it maps to KilKol Knife
 
 | Setting | What it is |

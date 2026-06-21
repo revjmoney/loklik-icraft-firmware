@@ -82,6 +82,20 @@ Only `chrome` is dialed in; tune the others on a scrap depth‑grid (see
   absolute (`G90`)/relative (`G91`), and **always writes inches (G20)**.
   Power/speed are ignored (it uses your feed/depth).
 
+### Cut Optimization (LightBurn → **Optimization Settings**)
+Tuned for drag-knife **sticker / kiss-cuts**:
+- **Cut inner shapes first — ON.** *The important one.* Interior detail/holes get
+  cut before the outline, so the piece can't shift or lift before the inside is done.
+- **Reduce travel moves — ON.** Less wasted rapid travel.
+- **Choose best direction — ON.** Fine — the blade-offset comp handles either way.
+- **Remove overlapping lines — ON** (~0.025 mm). Stops the knife re-cutting shared edges.
+- **Choose best starting point — ON** (optional). Starts each loop on a straight,
+  not a corner, so the overcut seam lands cleanly.
+- **Cut in direction order — OFF.** Rigid spatial sweep fights inner-first.
+- **Hide backlash — OFF.** Laser-engraving feature; useless for a knife.
+- **Reduce direction changes — OFF.** Engraving-oriented; inner-first is what you want.
+- **Order by Layer** is all a sticker sheet needs. Then hit **Set as Defaults**.
+
 ## Z zero & touch‑off (the rolling‑paper trick)
 No Z home switch, so you set Z zero by hand each session — fast and repeatable:
 
