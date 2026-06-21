@@ -49,15 +49,15 @@ VERSION = "1.0"
 MODES = {
     "knife-comp": dict(
         label="Knife - blade compensation", comp=True,
-        z_up=2.0, z_down=-0.85, cut_feed=800, offset=0.25, overcut=1.0),
+        z_up=2.54, z_down=-0.85, cut_feed=800, offset=0.25, overcut=1.0),
     "knife-nocomp": dict(
         label="Knife - no compensation", comp=False,
-        z_up=2.0, z_down=-0.85, cut_feed=800, offset=0.0, overcut=0.0),
+        z_up=2.54, z_down=-0.85, cut_feed=800, offset=0.0, overcut=0.0),
     "pen-draw": dict(
         label="Pen / Marker - draw (no comp)", comp=False,
-        z_up=2.0, z_down=-0.5, cut_feed=1500, offset=0.0, overcut=0.0),
+        z_up=2.54, z_down=-0.5, cut_feed=1500, offset=0.0, overcut=0.0),
 }
-Z_UP_DEFAULT = 2.0
+Z_UP_DEFAULT = 2.54
 Z_FEED_DEFAULT = 1000
 CUTOFF_DEFAULT = 20.0      # corner angle (deg) above which a swivel arc is added
 

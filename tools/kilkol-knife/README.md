@@ -87,7 +87,8 @@ quick and repeatable:
 4. Hit **Zero** on the pendant.
 
 That puts `Z0` a hair **above** the film surface, which is why the defaults are:
-- **`z_up` POSITIVE** (`+2`) — lift to clear before traveling.
+- **`z_up` POSITIVE** (`+2.54` mm = `0.100"`) — the output lifts here **before any
+  X/Y move** and after every cut, so the blade never drags across the material.
 - **`z_down` NEGATIVE** (`-0.85`) — the plunge below `Z0`.
 
 **Spring‑loaded holder?** Then `z_down` mostly sets **cutting pressure**, not
