@@ -56,7 +56,9 @@ axes:
         direction_pin: gpio.19:low
 
   y:
-    steps_per_mm: 188.4
+    # Y = grit roller. Bench-cal 2026-06-21: cmd 0.250" moved 0.292" -- 188.4 over-
+    # traveled 16.8%. 188.4 * 0.250/0.292 = 161.3 (refine over a 10" test move).
+    steps_per_mm: 161.3
     # 15 in/min (381 mm/min) cap -- eases peak current on the undersized PSU.
     max_rate_mm_per_min: 381
     acceleration_mm_per_sec2: 500
