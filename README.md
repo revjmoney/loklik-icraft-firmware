@@ -48,6 +48,7 @@ These are mapped **but disabled** in the configs (`must_home: false`, `hard_limi
 | `Grbl_Esp32/`, `libraries/`, `platformio.ini`, build scripts | Clean, buildable mirror of the LOKLiK/HKsjtech source (original commit history preserved) |
 | [`machines/`](machines/) | iCraft pin map + motion tune, and **FluidNC** + **Marlin** configs |
 | [`fluidnc-firmware/`](fluidnc-firmware/) | Pre-built **FluidNC v4.0.3** ESP32 images + upload tools — flash these to convert the iCraft to FluidNC |
+| [`tools/kilkol-knife/`](tools/kilkol-knife/) | **KilKol Knife** — turn LightBurn g-code into drag-knife / pen g-code (blade-offset comp + overcut) |
 | [`firmware-dumps/`](firmware-dumps/) | 8 FlashTool firmware versions, full 8 MB device backup, original NVS, partition tables |
 | [`evidence/`](evidence/) | Raw GitHub API / Wayback data backing EVIDENCE.md |
 | [`STORY.md`](STORY.md) / [`EVIDENCE.md`](EVIDENCE.md) | The backstory and the receipts |
@@ -91,6 +92,12 @@ web UI. Pre-built v4.0.3 ESP32 images are in
 motion tune, no homing/sensors) is
 [`machines/icraft-bareboard-nohoming.yaml`](machines/icraft-bareboard-nohoming.yaml).
 
+Rebuilding on a **fresh ESP32 + external TB6600 drivers** (e.g. after a fried
+factory board)? Use the field-tuned
+[`machines/icraft-wroom-tb6600-tuned.yaml`](machines/icraft-wroom-tb6600-tuned.yaml)
+— every value confirmed on the bench, with the real-world gotchas (X/Y swap,
+direction invert, Z idle-release for a hot blade motor) documented inline.
+
 **Full step-by-step (backup → erase → flash → config → WiFi): [FLASH_FLUIDNC.md](FLASH_FLUIDNC.md).**
 
 Short version:
@@ -106,7 +113,56 @@ python -m esptool --chip esp32 --port COM19 --baud 921600 erase-flash
 python fluidnc-firmware/tools/fnc_upload.py machines/icraft-bareboard-nohoming.yaml config.yaml
 ```
 
+## Cut with LightBurn → **KilKol Knife**
+
+Once it's on FluidNC, the iCraft speaks plain G-code, so you can drive it with
+whatever you like. If you already own **LightBurn**, you can keep designing in it
+and still run the **drag knife** — even though LightBurn is a laser program.
+
+[`tools/kilkol-knife/`](tools/kilkol-knife/) is a tiny, dependency-free Python
+app (GUI **and** CLI) that **converts a normal LightBurn "Save GCode" file into
+drag-knife / pen G-code**. LightBurn already splits jobs into *travel* (laser
+off) and *cut* (laser on) — KilKol Knife turns that into **blade up / blade
+down**, strips the laser commands, and respects the iCraft's `Z0 = up` convention.
+
+```sh
+# just spit a LightBurn .gc file at it:
+python tools/kilkol-knife/kilkol_knife.py  myjob.gc  myjob_pen.gc  --mode knife-comp
+#   ...or run it with no args for the GUI.
+```
+
+Three modes: **`knife-comp`** (real drag-knife **blade-offset compensation +
+overcut** so corners stay sharp), **`knife-nocomp`** (pen up/down only), and
+**`pen-draw`** (pen/marker, light touch). The blade-offset math is ported from
+[Inkcut](https://github.com/codelv/inkcut) (GPLv3). Full usage, modes, and blade
+tuning in [`tools/kilkol-knife/README.md`](tools/kilkol-knife/README.md).
+
+So the whole pipeline is: **design in LightBurn → KilKol Knife → gSender →
+vinyl.** No cloud, no login, no proprietary app.
+
+---
+
+## 📟 A note for LOKLiK
+
+You built a cutter on **GPLv3** software (`Grbl_ESP32`), shipped it locked behind
+a login wall, and pointed paying customers to **exactly nowhere** for the source
+the license obligates you to provide. The GPL isn't a vibe — **Section 6** says
+the source travels *with* the binary. So treat this repo as your compliance
+department: the code you were supposed to publish, finally published — plus the
+pin map, the flashing steps, and a config that turns your "appliance" back into
+**a real, open CNC machine** that needs nothing from you.
+
+I got a full refund. The community got the source. And this iCraft now runs with
+**no cloud, no login, and no LOKLiK** anywhere in the loop.
+
+Funny how open hardware wants to be free. 😉
+
+— *Rev. J. Money · [jmscnc.com](https://jmscnc.com)*
+
+---
+
 ## License
 
 GPLv3, inherited from upstream Grbl_ESP32 — see [LICENSE](LICENSE). Credits in
-[STORY.md](STORY.md).
+[STORY.md](STORY.md). **KilKol Knife** is also GPLv3 (blade-offset comp derived
+from Inkcut, © Jairus Martin).

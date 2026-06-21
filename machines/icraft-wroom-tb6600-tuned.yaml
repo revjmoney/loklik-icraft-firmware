@@ -1,0 +1,86 @@
+# =============================================================================
+# FluidNC config -- LokLik iCraft mechanics on a FRESH ESP32-WROOM + 3x TB6600
+# =============================================================================
+# This is the FIELD-TUNED config: a real iCraft was gutted of its (lightning-
+# fried) factory board and rebuilt on a NodeMCU ESP32-WROOM-32 driving three
+# external TB6600 stepper drivers. Every value below was confirmed on the bench.
+# It is the "it actually cuts" companion to diy-esp32-tb6600-fluidnc-config.yaml.
+#
+# Bare build: motors only -- NO homing, NO limits, NO sensors, NO laser.
+#
+# MOTION TUNE carried from the factory iCraft (Grbl_Esp32 SJMachine.h, 16
+# microsteps): X 160, Y 188.4, Z 90 steps/mm. Valid ONLY if each TB6600's
+# microstep DIP = 16 (steps/mm is driver-independent when microsteps match).
+#
+# WIRING is COMMON-ANODE: all PUL+/DIR+/ENA+ -> 3.3V, the ESP32 sinks PUL-/DIR-,
+# so the step pins are active-low (:low). Full wiring + DIP tables:
+#   docs in this repo + the NodeMCU pinout card.
+#
+# TB6600 DIP SWITCHES (set BEFORE powering motors):
+#   microstep -> 16
+#   current   -> X/Y (NEMA 17)  ~1.5 A ;  Z (smaller motor)  ~0.5-1.0 A
+#   ^ a too-hot motor means the current DIP is set above the motor's rating.
+#
+# REAL-WORLD GOTCHAS that bit us (documented so they don't bite you):
+#   * X/Y can come out crossed depending on which driver you wire to which
+#     motor -- if jogging X moves Y, swap the step/dir pins between the x: and
+#     y: blocks (done below: X is on gpio18/19, Y on gpio16/17).
+#   * If an axis runs backwards, add :low to that axis's direction_pin (X has it
+#     below) OR swap one coil pair. Direction is NOT preset on a fresh build.
+#   * FluidNC YAML takes NO inline comments after a value -- a trailing "# ..."
+#     on a pin line makes pin creation fail. Keep comments on their own lines.
+# =============================================================================
+
+name: "iCraft on WROOM + TB6600 (tuned)"
+board: "ESP32 DevKit (WROOM-32)"
+
+stepping:
+  engine: RMT
+  idle_ms: 250
+  pulse_us: 4
+  dir_delay_us: 2
+  disable_delay_us: 0
+
+axes:
+  x:
+    steps_per_mm: 160
+    max_rate_mm_per_min: 5000
+    acceleration_mm_per_sec2: 2000
+    max_travel_mm: 330
+    motor0:
+      stepstick:
+        # Carriage motor landed on the gpio18/19 driver (X/Y were crossed), and
+        # X ran backwards -> direction inverted with :low.
+        step_pin: gpio.18:low
+        direction_pin: gpio.19:low
+
+  y:
+    steps_per_mm: 188.4
+    max_rate_mm_per_min: 3000
+    acceleration_mm_per_sec2: 500
+    max_travel_mm: 1000
+    motor0:
+      stepstick:
+        step_pin: gpio.16:low
+        direction_pin: gpio.17
+
+  z:
+    steps_per_mm: 90
+    max_rate_mm_per_min: 5000
+    acceleration_mm_per_sec2: 1000
+    # Measured usable Z travel ~0.95 in = 24.13 mm (factory home switches removed,
+    # which ate some range). Envelope only -- NOT enforced without a Z home
+    # switch + homing + soft_limits.
+    max_travel_mm: 24.13
+    motor0:
+      stepstick:
+        step_pin: gpio.21:low
+        direction_pin: gpio.22
+        # Z-ONLY idle release: the blade leadscrew is self-locking, so it holds
+        # depth when de-energized. With idle_ms above, Z drops its (heat-making)
+        # holding current ~250 ms after it stops, while X/Y stay fully energized.
+        # Wire P23 (gpio.23) -> the Z driver's ENA- ONLY; leave X/Y ENA- open.
+        disable_pin: gpio.23:low
+
+start:
+  must_home: false
