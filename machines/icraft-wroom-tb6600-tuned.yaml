@@ -44,9 +44,9 @@ stepping:
 axes:
   x:
     steps_per_mm: 160
-    # 45 in/min (1143 mm/min) -- accel is the current hog, not top speed, so this
-    # runs fine on the weak PSU. Push higher once the 36V/360W supply is in.
-    max_rate_mm_per_min: 1143
+    # 15 in/min (381 mm/min) -- 45 ipm browned out the weak 1.5A brick (the speed
+    # draw, NOT WiFi -- WiFi was off). Back to 15 till the 36V/360W is in; then 45.
+    max_rate_mm_per_min: 381
     acceleration_mm_per_sec2: 300
     max_travel_mm: 330
     motor0:
@@ -60,8 +60,9 @@ axes:
     # Y = grit roller. Bench-cal 2026-06-21: cmd 0.250" moved 0.292" -- 188.4 over-
     # traveled 16.8%. 188.4 * 0.250/0.292 = 161.3 (refine over a 10" test move).
     steps_per_mm: 161.3
-    # 30 in/min (762 mm/min) -- roller; watch for grip-slip at speed, back off if it drifts.
-    max_rate_mm_per_min: 762
+    # 15 in/min (381 mm/min) -- throttled with X for the weak brick.
+    # Target 30 ipm (762) once the 36V/360W PSU is in.
+    max_rate_mm_per_min: 381
     acceleration_mm_per_sec2: 300
     max_travel_mm: 1000
     motor0:
