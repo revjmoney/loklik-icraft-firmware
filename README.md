@@ -126,16 +126,19 @@ off) and *cut* (laser on) — KilKol Knife turns that into **blade up / blade
 down**, strips the laser commands, and respects the iCraft's `Z0 = up` convention.
 
 ```sh
-# just spit a LightBurn .gc file at it:
-python tools/kilkol-knife/kilkol_knife.py  myjob.gc  myjob_pen.gc  --mode knife-comp
+# pick a material preset and go:
+python tools/kilkol-knife/kilkol_knife.py  myjob.gc  myjob_pen.gc  --material chrome
 #   ...or run it with no args for the GUI.
 ```
 
-Three modes: **`knife-comp`** (real drag-knife **blade-offset compensation +
-overcut** so corners stay sharp), **`knife-nocomp`** (pen up/down only), and
-**`pen-draw`** (pen/marker, light touch). The blade-offset math is ported from
-[Inkcut](https://github.com/codelv/inkcut) (GPLv3). Full usage, modes, and blade
-tuning in [`tools/kilkol-knife/README.md`](tools/kilkol-knife/README.md).
+It's **inch‑native** (outputs `G20`, so FluidNC + the CYD pendant stay in inches),
+does real drag‑knife **blade‑offset compensation + overcut** (sharp corners),
+**multi‑pass / two‑cut trick** (`--passes`, for thick chrome/holographic), and
+**material presets** (`--material chrome|vinyl|htv|holographic`). Blade‑offset math
+ported from [Inkcut](https://github.com/codelv/inkcut) (GPLv3). Full usage in
+[`tools/kilkol-knife/README.md`](tools/kilkol-knife/README.md); the blade‑depth /
+pressure / blade‑angle / spring‑calibration guide is in
+[`tools/kilkol-knife/TUNING.md`](tools/kilkol-knife/TUNING.md).
 
 So the whole pipeline is: **design in LightBurn → KilKol Knife → gSender →
 vinyl.** No cloud, no login, no proprietary app.

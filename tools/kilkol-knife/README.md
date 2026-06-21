@@ -12,131 +12,115 @@ That maps exactly onto a drag knife or pen:
 | laser **on** (`G1`, power `S>0`) | blade/pen **DOWN** |
 | laser **off** (`G0`, or `S0`/`M5`) | blade/pen **UP** |
 
-So you get to **design in LightBurn** — the UI you actually like — and still
-drive a drag knife. Feed this tool a normal LightBurn **"Save GCode"** file and
-it spits out FluidNC‑ready pen code: Z up/down inserted at the right spots, the
-laser commands stripped, and (optionally) real **drag‑knife blade‑offset
-compensation + overcut** so your corners come out sharp instead of rounded.
+So you **design in LightBurn** — the UI you actually like — and still drive a drag
+knife. Feed it a normal LightBurn **"Save GCode"** file and out comes FluidNC‑ready
+pen code: Z up/down at the right spots, laser commands stripped, optional
+**drag‑knife blade‑offset compensation + overcut** for sharp corners, optional
+**multi‑pass** (two‑cut trick) for thick stock, and **material presets**.
 
-> Machine Z convention (LokLik iCraft on FluidNC): **`Z0` = UP, negative = DOWN.**
+> **Units: everything is INCHES.** Output is `G20`, so FluidNC and the CYD pendant
+> stay in inches the whole job; every parameter is inches (type `0.100` for 100
+> thou). LightBurn input can be any unit — it's auto‑detected (`G20`/`G21`).
+> Machine Z convention: **`Z0` = UP, negative = DOWN.**
 
 ---
 
 ## Requirements
-Just **Python 3** (3.8+). No pip installs — the GUI uses the standard‑library
-`tkinter`, the rest is pure Python.
+Just **Python 3** (3.8+). No pip installs — GUI uses standard‑library `tkinter`.
 
 ## Run it
 
-**GUI** (double‑click, or):
-```sh
-python kilkol_knife.py
-```
-Open a LightBurn `.gc`, pick a mode, hit **Convert**, load the result in gSender.
+**GUI** (double‑click, or `python kilkol_knife.py`): open a LightBurn `.gc`, pick a
+**Material preset** (or a mode), hit **Convert**, load the result in gSender.
 
 **CLI:**
 ```sh
-python kilkol_knife.py input.gc output.gc --mode knife-comp --offset 0.25 --overcut 1.0
+python kilkol_knife.py input.gc output.gc --material chrome
+python kilkol_knife.py input.gc output.gc --mode knife-comp --z-down -0.040 --passes 3
 ```
 
-## Modes
+## Material presets (`--material`, or GUI dropdown)
+Pick one and it fills depth / passes / feed; explicit flags still override.
+
+| Preset | z_down | passes | feed | Notes |
+|---|---|---|---|---|
+| `chrome` | −0.040″ | **3** | 30 ipm | **field‑dialed** on this machine |
+| `vinyl` | −0.020″ | 1 | 30 ipm | std cal sign vinyl (starting point) |
+| `htv` | −0.035″ | 2 | 25 ipm | heat‑transfer (starting point) |
+| `holographic` | −0.040″ | 2 | 20 ipm | slow + double cut (starting point) |
+
+Only `chrome` is dialed in; tune the others on a scrap depth‑grid (see
+**[TUNING.md](TUNING.md)**) and update the preset.
+
+## Modes (`--mode`)
 
 | Mode | What it does | Use for |
 |---|---|---|
-| `knife-comp` | pen up/down **+ blade‑offset compensation + overcut** | drag knife, sharp corners, small/intricate detail |
-| `knife-nocomp` | pen up/down only, exact path | drag knife, big/simple shapes |
-| `pen-draw` | pen up/down, no comp, light touch, faster feed | pen / marker drawing (a pen has no blade offset) |
+| `knife-comp` | pen up/down **+ blade‑offset comp + overcut** | drag knife, sharp corners, detail |
+| `knife-nocomp` | pen up/down only, exact path | big/simple shapes |
+| `pen-draw` | pen up/down, no comp, light touch | pen / marker drawing |
 
-## Key options
+## Key options (all INCHES)
 
-| Flag | Meaning | Default (per mode) |
+| Flag | Meaning | Default |
 |---|---|---|
+| `--material` | preset: fills depth/passes/feed | none |
 | `--mode` | `knife-comp` / `knife-nocomp` / `pen-draw` | `knife-comp` |
-| `--z-up` | pen‑up Z (your "up" is `0`) | `0` |
-| `--z-down` | plunge depth, mm **negative** | `-1.5` knife / `-1.0` pen |
-| `--cut-feed` | cutting speed, mm/min | `800` knife / `1500` pen |
-| `--offset` | blade offset, mm (comp mode) | `0.25` |
-| `--overcut` | overcut on closed shapes, mm | `1.0` |
+| `--z-up` | retract Z (positive) — must clear the spring travel | `0.400` |
+| `--z-down` | plunge / **cutting pressure** (negative) | `-0.030` (safe) |
+| `--passes` | cut each shape N times (two‑cut trick) | `1` |
+| `--cut-feed` | cutting speed, in/min | `30` |
+| `--offset` | blade offset (comp): `0.010` @45°, `0.020` @60° | `0.010` |
+| `--overcut` | overcut on closed shapes | `0.040` |
 | `--cutoff` | corner angle (deg) that triggers a swivel arc | `20` |
-| `--g1-travel` | use `G1` travels instead of `G0` rapids | off |
-| `--no-home` | don't return to `X0 Y0` at the end | off |
+| `--g1-travel` / `--no-home` | G1 travels / skip return to `X0 Y0` | off |
 
 ## LightBurn side
-- Set your cut layers to **Line mode** (NOT Fill/scan — Fill rasterizes, useless
-  for a knife).
+- Cut layers in **Line mode** (NOT Fill/scan — Fill rasterizes, useless for a knife).
 - **File → Save GCode** (any GRBL device profile).
-- **Units & output mode don't matter** — the tool auto-detects inch (`G20`) vs
-  mm (`G21`) and absolute (`G90`) vs "current position" relative (`G91`), and
-  always writes mm. Power/speed are ignored (it uses your `--cut-feed` /
-  `--z-down`).
+- **Units & output mode don't matter** — auto‑detects inch (`G20`)/mm (`G21`) and
+  absolute (`G90`)/relative (`G91`), and **always writes inches (G20)**.
+  Power/speed are ignored (it uses your feed/depth).
 
-## Z zero & touch-off (the rolling-paper trick)
+## Z zero & touch‑off (the rolling‑paper trick)
+No Z home switch, so you set Z zero by hand each session — fast and repeatable:
 
-This machine has no Z home switch, so you set Z zero **by hand each session** —
-quick and repeatable:
+1. Load material.
+2. Lay a **single rolling paper on top** as a feeler (a **Job 1.5** ≈ **0.002″**,
+   dead consistent — and the best cheap feeler gauge in the shop 😉).
+3. Jog Z **down** in small (~0.005″) steps until the knife just **pinches the
+   paper** — first drag, not a hard press.
+4. Hit **Zero**.
 
-1. Load your vinyl.
-2. Lay a **single rolling paper on top of the vinyl** as a feeler gauge. (A
-   **Job 1.5** is perfect — ~0.025 mm and dead consistent. And yes, I keep
-   rolling papers in the shop because I'm a grown adult and allowed to 😉 — they
-   also happen to be the best cheap feeler gauge money can buy.)
-3. Jog Z **down** in small (~0.1 mm) steps until the knife just **pinches the
-   paper** — *first drag, not a hard press.* Your Z is a rigid leadscrew, so
-   jamming it into the material deflects the gantry / skips steps and gives a
-   false-deep zero.
-4. Hit **Zero** on the pendant.
+That puts `Z0` a hair above the surface. The output **lifts to `z_up` (+0.400″)
+before any X/Y move and after every cut**, so the blade never drags across the
+material — `z_up` must be **bigger than the holder's spring travel** to fully
+extract the blade (this machine's spring is ~0.2″, hence 0.400″).
 
-That puts `Z0` a hair **above** the film surface, which is why the defaults are:
-- **`z_up` POSITIVE** (`+0.100"` = 100 thou) — the output lifts here **before any
-  X/Y move** and after every cut, so the blade never drags across the material.
-- **`z_down` NEGATIVE** (`-0.100"`) — the plunge below `Z0`.
+> Watch **WPos** on the pendant, not MPos. WPos reads 0 at your touch‑off; MPos is
+> the machine‑absolute count and only means anything after homing (which this
+> machine doesn't do). MPos ≠ WPos is normal — that gap *is* the work offset.
 
-> **Units: everything is INCHES.** Output is `G20`, so FluidNC and the CYD pendant
-> stay in inches the whole job; every parameter is inches (type `0.100` for 100
-> thou). LightBurn input can be any unit — it's auto-detected (`G20`/`G21`).
+## Dialing the cut (short version)
+On a **soft spring holder, `z_down` is cutting PRESSURE**, not depth (the blade
+exposure caps depth). Thick/chrome wants **shallow depth + 2–3 passes**, not one
+deep plunge. To dial a material: cut a **scrap depth‑grid** (small squares,
+stepping depth and/or passes) and pick the shallowest that severs the film clean
+and leaves the backing — then bake it into a `--material` preset.
 
-**Spring‑loaded holder?** Then `z_down` mostly sets **cutting pressure**, not
-depth — your **blade exposure** (the holder cap) caps how deep the blade actually
-goes, and the spring keeps pressure steady over an uneven sheet. So a deeper
-`z_down` = *more punch*. (Enough extra still nudges a spring blade toward the
-backing, so there's a sweet spot.) The `-0.85` default came from a depth‑ladder
-test and sits just above the **factory iCraft's ~0.8 mm plunge** — nice
-independent confirmation. **It's fully adjustable per job** — change the
-**"Z down / pressure"** field (GUI) or `--z-down` (CLI); no code editing.
+**Read the cut:** a correct cut leaves only a **faint matte scratch on the backing
+liner** — never through it.
 
-**Safety:** the output always lifts Z to `z_up` **before any X/Y move** (and after
-every cut), so the knife never drags across freshly loaded material — as long as
-`z_up` stays positive.
-
-> Watch **WPos** on the pendant, not MPos. WPos reads 0 at your touch-off; MPos is
-> the machine-absolute count and only means anything after homing (which this
-> machine doesn't do). MPos differing from WPos is normal — that gap *is* the work
-> offset.
-
-## Tuning the blade (comp mode)
-- **Blade offset ≈ the blade spec:** 45° blade ≈ **0.25 mm**, 60° ≈ **0.5 mm**.
-- Cut a test square, read the corners:
-  - **Rounded** → offset too **low** → +0.05 mm.
-  - **Little horns/flares** at corners → offset too **high** → −0.05 mm.
-- **Overcut** ~0.25–1 mm; raise it if closed shapes don't fully separate at the
-  start/stop point.
-- **Plunge / pressure (`z-down`):** default `-0.85` (rolling-paper touch-off +
-  spring holder). Tune on scrap — **shallower** if it scores the backing,
-  **deeper** if it doesn't weed clean.
-- **Dial a new material fast with a depth ladder:** cut a row of small squares,
-  each a step deeper (e.g. `-0.3, -0.4, … -0.9`), then weed them — the
-  **shallowest one that lifts clean (backing intact)** is your number. Beats
-  re-cutting the whole job to guess.
+**Full guide — spring force calibration, blade angles (45° vs 60°/chrome),
+material force table, multi‑pass rationale: [TUNING.md](TUNING.md).**
 
 ## How the comp works
-LightBurn outputs flattened line segments, so the compensation reconstructs each
-cut into a polyline and:
-1. shifts every commanded (holder) point **forward along travel by the offset**,
-   so the *trailing* blade tip lands on the design line, and
-2. inserts a small **swivel arc** (radius = offset) at corners sharper than the
-   cutoff, so the blade re‑aims *through* the corner instead of rounding it.
-
-The blade‑offset algorithm is ported from **[Inkcut](https://github.com/codelv/inkcut)** (GPLv3).
+LightBurn emits flattened line segments, so the comp reconstructs each cut into a
+polyline and (1) shifts every commanded (holder) point **forward along travel by
+the offset** so the *trailing* blade tip lands on the line, and (2) inserts a
+small **swivel arc** (radius = offset) at sharp corners so the blade re‑aims
+*through* the corner instead of rounding it. Ported from
+**[Inkcut](https://github.com/codelv/inkcut)** (GPLv3).
 
 ## License
 **GPLv3** — see the repository `LICENSE`. Blade‑offset comp derived from Inkcut
