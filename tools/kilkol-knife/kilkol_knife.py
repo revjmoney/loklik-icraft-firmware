@@ -33,32 +33,30 @@ APP_NAME = "KilKol Knife"
 VERSION = "1.0"
 
 # ----------------------------- mode presets -----------------------------------
-# Z convention: Z0 is set at touch-off (a thin feeler -- a Job 1.5 rolling paper
-# -- on top of the loaded vinyl), so Z0 sits a hair ABOVE the film. Travels lift
-# to a positive z_up to clear; cutting drops to a NEGATIVE z_down.
+# *** ALL DISTANCES ARE IN INCHES, and the output g-code is G20 (inch) *** so
+# FluidNC and the CYD pendant stay in inches for the whole job. LightBurn input
+# can be any unit -- it's auto-detected (G20/G21) and normalized internally.
+# (Type in thou: 0.100 = 100 thou.)
 #
-# SPRING-LOADED blade holder note: z_down sets how hard the spring presses
-# (CUTTING PRESSURE) more than how deep the blade goes -- the blade EXPOSURE /
-# cap setting caps the actual cut depth. So a deeper z_down is mostly "more
-# punch," BUT enough extra pressure can still nudge a spring blade into the
-# backing, so there IS a sweet spot. The dialed default (-0.85) came from a
-# depth-ladder test, just above the factory iCraft's ~0.8 mm plunge. It's fully
-# adjustable per job (GUI "Z down / pressure" field, or CLI --z-down): not
-# weeding = a touch more (deeper); scoring the backing = back off (or reduce
-# blade exposure).
+# Z convention: Z0 is set at touch-off (a thin feeler -- a Job 1.5 rolling paper,
+# ~0.002") on the material, so Z0 sits a hair above it. Travels lift to a
+# positive z_up to clear; cutting drops to a NEGATIVE z_down. This machine runs a
+# SOFT spring holder, so z_down is really CUTTING PRESSURE -- dial it per material
+# on a scrap depth-grid (GUI "Z down" field / CLI --z-down). Reference:
+#   z_up 0.100"=100thou lift,  z_down -0.100" plunge,  offset 0.010", overcut 0.040".
 MODES = {
     "knife-comp": dict(
         label="Knife - blade compensation", comp=True,
-        z_up=2.54, z_down=-0.85, cut_feed=800, offset=0.25, overcut=1.0),
+        z_up=0.100, z_down=-0.100, cut_feed=30, offset=0.010, overcut=0.040),
     "knife-nocomp": dict(
         label="Knife - no compensation", comp=False,
-        z_up=2.54, z_down=-0.85, cut_feed=800, offset=0.0, overcut=0.0),
+        z_up=0.100, z_down=-0.100, cut_feed=30, offset=0.0, overcut=0.0),
     "pen-draw": dict(
         label="Pen / Marker - draw (no comp)", comp=False,
-        z_up=2.54, z_down=-0.5, cut_feed=1500, offset=0.0, overcut=0.0),
+        z_up=0.100, z_down=-0.020, cut_feed=60, offset=0.0, overcut=0.0),
 }
-Z_UP_DEFAULT = 2.54
-Z_FEED_DEFAULT = 1000
+Z_UP_DEFAULT = 0.100       # inches
+Z_FEED_DEFAULT = 40        # in/min for the Z up/down moves
 CUTOFF_DEFAULT = 20.0      # corner angle (deg) above which a swivel arc is added
 
 NUM = r'-?\d+\.?\d*'
@@ -190,18 +188,26 @@ def blade_offset(pts, r, cutoff_deg=CUTOFF_DEFAULT, arc_steps=10):
 
 
 # ------------------------------- emit -----------------------------------------
-def convert(text, mode="knife-comp", z_up=Z_UP_DEFAULT, z_down=-1.5,
-            cut_feed=800, z_feed=Z_FEED_DEFAULT, offset=0.25, overcut=1.0,
-            cutoff=CUTOFF_DEFAULT, travel_g0=True, travel_feed=5000, home=True):
-    """Return (gcode_text, n_strokes, n_cuts)."""
+def convert(text, mode="knife-comp", z_up=Z_UP_DEFAULT, z_down=-0.100,
+            cut_feed=30, z_feed=Z_FEED_DEFAULT, offset=0.010, overcut=0.040,
+            cutoff=CUTOFF_DEFAULT, travel_g0=True, travel_feed=200, home=True):
+    """Return (gcode_text, n_strokes, n_cuts).
+
+    ALL distances are INCHES and the output is G20 (inch) -- the machine + CYD
+    stay in inches. LightBurn input units (G20/G21) are auto-detected and
+    normalized to mm internally for the geometry/comp, then emitted in inches.
+    """
     m = MODES.get(mode, MODES["knife-comp"])
     comp = m["comp"]
-    strokes = parse_strokes(text)
+    strokes = parse_strokes(text)            # geometry is mm internally
+    off_mm = offset * 25.4                    # comp params: inch -> mm
+    over_mm = overcut * 25.4
+    IN = 1.0 / 25.4                           # output coords: mm -> inch
     out = [
         "; %s v%s  --  converted from LightBurn laser g-code" % (APP_NAME, VERSION),
-        "; mode: %s   (Z0 = up, negative = down)" % m["label"],
-        "G21", "G90", "G94",
-        "G1 Z%.4f F%d" % (z_up, z_feed),        # ensure up to start
+        "; mode: %s   (INCH output / G20, Z0 = up, negative = down)" % m["label"],
+        "G20", "G90", "G94",
+        "G1 Z%.4f F%.2f" % (z_up, z_feed),        # ensure up to start
     ]
     n_cuts = 0
     for st in strokes:
@@ -209,17 +215,17 @@ def convert(text, mode="knife-comp", z_up=Z_UP_DEFAULT, z_down=-1.5,
             continue
         pts = st
         if comp:
-            pts = add_overcut(pts, overcut)
-            pts = blade_offset(pts, offset, cutoff)
+            pts = add_overcut(pts, over_mm)
+            pts = blade_offset(pts, off_mm, cutoff)
         x0, y0 = pts[0]
         if travel_g0:
-            out.append("G0 X%.4f Y%.4f" % (x0, y0))
+            out.append("G0 X%.4f Y%.4f" % (x0 * IN, y0 * IN))
         else:
-            out.append("G1 X%.4f Y%.4f F%d" % (x0, y0, travel_feed))
-        out.append("G1 Z%.4f F%d" % (z_down, z_feed))            # down
+            out.append("G1 X%.4f Y%.4f F%.2f" % (x0 * IN, y0 * IN, travel_feed))
+        out.append("G1 Z%.4f F%.2f" % (z_down, z_feed))            # down
         for (x, y) in pts[1:]:
-            out.append("G1 X%.4f Y%.4f F%d" % (x, y, cut_feed))
-        out.append("G1 Z%.4f F%d" % (z_up, z_feed))              # up
+            out.append("G1 X%.4f Y%.4f F%.2f" % (x * IN, y * IN, cut_feed))
+        out.append("G1 Z%.4f F%.2f" % (z_up, z_feed))              # up
         n_cuts += 1
     if home:
         out.append("G0 X0 Y0")
@@ -236,17 +242,18 @@ def run_cli(argv):
     ap.add_argument("output", help="output pen/blade g-code file")
     ap.add_argument("--mode", choices=list(MODES), default="knife-comp")
     ap.add_argument("--z-up", type=float, default=None,
-                    help="travel/retract Z (mm, positive). default per mode")
+                    help="travel/retract Z (INCHES, positive). default per mode")
     ap.add_argument("--z-down", type=float, default=None,
-                    help="plunge depth (mm, negative). default per mode")
-    ap.add_argument("--cut-feed", type=int, default=None)
-    ap.add_argument("--z-feed", type=int, default=Z_FEED_DEFAULT)
+                    help="plunge depth (INCHES, negative). default per mode")
+    ap.add_argument("--cut-feed", type=float, default=None,
+                    help="cut feed (in/min)")
+    ap.add_argument("--z-feed", type=float, default=Z_FEED_DEFAULT)
     ap.add_argument("--offset", type=float, default=None,
-                    help="blade offset (mm) for knife-comp")
+                    help="blade offset (INCHES) for knife-comp")
     ap.add_argument("--overcut", type=float, default=None,
-                    help="overcut (mm) for knife-comp closed shapes")
+                    help="overcut (INCHES) for knife-comp closed shapes")
     ap.add_argument("--cutoff", type=float, default=CUTOFF_DEFAULT)
-    ap.add_argument("--travel-feed", type=int, default=5000)
+    ap.add_argument("--travel-feed", type=float, default=200)
     ap.add_argument("--g1-travel", action="store_true",
                     help="use G1 travels at --travel-feed instead of G0 rapids")
     ap.add_argument("--no-home", action="store_true")
@@ -333,12 +340,12 @@ def run_gui():
     # ---- params ----
     pf = ttk.LabelFrame(root, text="Parameters", padding=10)
     pf.pack(fill="x", padx=10, pady=6)
-    add_row(pf, "Z up (mm)", "z_up", Z_UP_DEFAULT, 0)
-    add_row(pf, "Z down / pressure (mm)", "z_down", -0.85, 1)
-    add_row(pf, "Cut feed (mm/min)", "cut_feed", 800, 2)
-    add_row(pf, "Z feed (mm/min)", "z_feed", Z_FEED_DEFAULT, 3)
-    add_row(pf, "Blade offset (mm)", "offset", 0.25, 4)
-    add_row(pf, "Overcut (mm)", "overcut", 1.0, 5)
+    add_row(pf, "Z up (in)", "z_up", Z_UP_DEFAULT, 0)
+    add_row(pf, "Z down / pressure (in)", "z_down", -0.100, 1)
+    add_row(pf, "Cut feed (in/min)", "cut_feed", 30, 2)
+    add_row(pf, "Z feed (in/min)", "z_feed", Z_FEED_DEFAULT, 3)
+    add_row(pf, "Blade offset (in)", "offset", 0.010, 4)
+    add_row(pf, "Overcut (in)", "overcut", 0.040, 5)
     add_row(pf, "Corner angle (deg)", "cutoff", CUTOFF_DEFAULT, 6)
 
     # ---- log ----
@@ -387,8 +394,8 @@ def run_gui():
                 mode=state["mode"].get(),
                 z_up=float(fields["z_up"].get()),
                 z_down=float(fields["z_down"].get()),
-                cut_feed=int(float(fields["cut_feed"].get())),
-                z_feed=int(float(fields["z_feed"].get())),
+                cut_feed=float(fields["cut_feed"].get()),
+                z_feed=float(fields["z_feed"].get()),
                 offset=float(fields["offset"].get()),
                 overcut=float(fields["overcut"].get()),
                 cutoff=float(fields["cutoff"].get()))

@@ -87,9 +87,13 @@ quick and repeatable:
 4. Hit **Zero** on the pendant.
 
 That puts `Z0` a hair **above** the film surface, which is why the defaults are:
-- **`z_up` POSITIVE** (`+2.54` mm = `0.100"`) — the output lifts here **before any
+- **`z_up` POSITIVE** (`+0.100"` = 100 thou) — the output lifts here **before any
   X/Y move** and after every cut, so the blade never drags across the material.
-- **`z_down` NEGATIVE** (`-0.85`) — the plunge below `Z0`.
+- **`z_down` NEGATIVE** (`-0.100"`) — the plunge below `Z0`.
+
+> **Units: everything is INCHES.** Output is `G20`, so FluidNC and the CYD pendant
+> stay in inches the whole job; every parameter is inches (type `0.100` for 100
+> thou). LightBurn input can be any unit — it's auto-detected (`G20`/`G21`).
 
 **Spring‑loaded holder?** Then `z_down` mostly sets **cutting pressure**, not
 depth — your **blade exposure** (the holder cap) caps how deep the blade actually
