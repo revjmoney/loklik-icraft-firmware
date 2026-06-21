@@ -59,6 +59,17 @@ Z_UP_DEFAULT = 0.400       # inches
 Z_FEED_DEFAULT = 80        # in/min for the Z up/down moves
 CUTOFF_DEFAULT = 20.0      # corner angle (deg) above which a swivel arc is added
 
+# Material presets -> (z_down INCHES, passes, cut_feed in/min). Pick one and it
+# fills depth/passes/feed; explicit values still override. ONLY "chrome" is
+# field-dialed on this machine's soft-spring holder -- the others are sane
+# starting points; tune each on a scrap depth-grid (they're holder-specific).
+MATERIALS = {
+    "chrome":      dict(z_down=-0.040, passes=3, cut_feed=30),   # field-dialed
+    "vinyl":       dict(z_down=-0.020, passes=1, cut_feed=30),   # std cal sign vinyl (est)
+    "htv":         dict(z_down=-0.035, passes=2, cut_feed=25),   # heat-transfer vinyl (est)
+    "holographic": dict(z_down=-0.040, passes=2, cut_feed=20),   # slow + double cut (est)
+}
+
 NUM = r'-?\d+\.?\d*'
 
 
@@ -258,21 +269,26 @@ def run_cli(argv):
     ap.add_argument("--travel-feed", type=float, default=200)
     ap.add_argument("--g1-travel", action="store_true",
                     help="use G1 travels at --travel-feed instead of G0 rapids")
-    ap.add_argument("--passes", type=int, default=1,
+    ap.add_argument("--passes", type=int, default=None,
                     help="cut each shape N times (two-cut trick for thick/chrome)")
+    ap.add_argument("--material", choices=list(MATERIALS), default=None,
+                    help="material preset: fills depth/passes/feed (still overridable)")
     ap.add_argument("--no-home", action="store_true")
     a = ap.parse_args(argv)
     d = MODES[a.mode]
+    mat = MATERIALS.get(a.material, {})            # material preset (may be empty)
+    # precedence: explicit flag > material preset > mode default
     kw = dict(
         mode=a.mode,
         z_up=a.z_up if a.z_up is not None else d["z_up"],
-        z_down=a.z_down if a.z_down is not None else d["z_down"],
-        cut_feed=a.cut_feed if a.cut_feed is not None else d["cut_feed"],
+        z_down=a.z_down if a.z_down is not None else mat.get("z_down", d["z_down"]),
+        cut_feed=a.cut_feed if a.cut_feed is not None else mat.get("cut_feed", d["cut_feed"]),
         z_feed=a.z_feed,
         offset=a.offset if a.offset is not None else d["offset"],
         overcut=a.overcut if a.overcut is not None else d["overcut"],
         cutoff=a.cutoff, travel_g0=not a.g1_travel, travel_feed=a.travel_feed,
-        home=not a.no_home, passes=a.passes)
+        home=not a.no_home,
+        passes=a.passes if a.passes is not None else mat.get("passes", 1))
     with open(a.input, "r", errors="replace") as f:
         text = f.read()
     gcode, n_strokes, n_cuts = convert(text, **kw)
@@ -341,6 +357,17 @@ def run_gui():
                         command=lambda: apply_mode()).grid(
             row=i, column=0, sticky="w")
 
+    # ---- material preset ----
+    matf = ttk.LabelFrame(root, text="Material preset", padding=10)
+    matf.pack(fill="x", padx=10, pady=6)
+    state["material"] = tk.StringVar(value="(custom)")
+    matcb = ttk.Combobox(matf, textvariable=state["material"], state="readonly",
+                         values=["(custom)"] + list(MATERIALS), width=16)
+    matcb.grid(row=0, column=0, sticky="w")
+    matcb.bind("<<ComboboxSelected>>", lambda e: apply_material())
+    ttk.Label(matf, text="   fills depth / passes / feed").grid(
+        row=0, column=1, sticky="w")
+
     # ---- params ----
     pf = ttk.LabelFrame(root, text="Parameters", padding=10)
     pf.pack(fill="x", padx=10, pady=6)
@@ -371,6 +398,16 @@ def run_gui():
         fields["cut_feed"].set(str(d["cut_feed"]))
         fields["offset"].set(str(d["offset"]))
         fields["overcut"].set(str(d["overcut"]))
+
+    def apply_material():
+        m = MATERIALS.get(state["material"].get())
+        if not m:
+            return                                  # "(custom)" -> leave fields
+        fields["z_down"].set(str(m["z_down"]))
+        fields["passes"].set(str(m["passes"]))
+        fields["cut_feed"].set(str(m["cut_feed"]))
+        logmsg("material '%s' -> z_down %.3f, passes %d, feed %d ipm"
+               % (state["material"].get(), m["z_down"], m["passes"], m["cut_feed"]))
 
     def pick_in():
         p = filedialog.askopenfilename(
