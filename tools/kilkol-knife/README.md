@@ -70,6 +70,36 @@ python kilkol_knife.py input.gc output.gc --mode knife-comp --offset 0.25 --over
   always writes mm. Power/speed are ignored (it uses your `--cut-feed` /
   `--z-down`).
 
+## Z zero & touch-off (the rolling-paper trick)
+
+This machine has no Z home switch, so you set Z zero **by hand each session** —
+quick and repeatable:
+
+1. Load your vinyl.
+2. Lay a **single rolling paper on top of the vinyl** as a feeler gauge. (A
+   **Job 1.5** is perfect — ~0.025 mm and dead consistent. And yes, I keep
+   rolling papers in the shop because I'm a grown adult and allowed to 😉 — they
+   also happen to be the best cheap feeler gauge money can buy.)
+3. Jog Z **down** in small (~0.1 mm) steps until the knife just **pinches the
+   paper** — *first drag, not a hard press.* Your Z is a rigid leadscrew, so
+   jamming it into the material deflects the gantry / skips steps and gives a
+   false-deep zero.
+4. Hit **Zero** on the pendant.
+
+That puts `Z0` a hair **above** the film surface, which is why the defaults are:
+- **`z_up` POSITIVE** (`+2`) — lift to clear before traveling.
+- **`z_down` small NEGATIVE** (`-0.1`) — drop through the paper gap + nick the
+  film (kiss cut) without reaching the backing.
+
+**Safety:** the output always lifts Z to `z_up` **before any X/Y move** (and after
+every cut), so the knife never drags across freshly loaded material — as long as
+`z_up` stays positive.
+
+> Watch **WPos** on the pendant, not MPos. WPos reads 0 at your touch-off; MPos is
+> the machine-absolute count and only means anything after homing (which this
+> machine doesn't do). MPos differing from WPos is normal — that gap *is* the work
+> offset.
+
 ## Tuning the blade (comp mode)
 - **Blade offset ≈ the blade spec:** 45° blade ≈ **0.25 mm**, 60° ≈ **0.5 mm**.
 - Cut a test square, read the corners:
@@ -77,8 +107,9 @@ python kilkol_knife.py input.gc output.gc --mode knife-comp --offset 0.25 --over
   - **Little horns/flares** at corners → offset too **high** → −0.05 mm.
 - **Overcut** ~0.25–1 mm; raise it if closed shapes don't fully separate at the
   start/stop point.
-- **Plunge (`z-down`):** start shallow; deepen until it cuts the vinyl but not
-  the backing.
+- **Plunge (`z-down`):** default `-0.1` for the rolling-paper touch-off above.
+  Tune on scrap — **shallower** (`-0.05`) if it scores the backing, **deeper**
+  (`-0.15`) if the vinyl doesn't weed clean.
 
 ## How the comp works
 LightBurn outputs flattened line segments, so the compensation reconstructs each

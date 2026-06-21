@@ -33,18 +33,23 @@ APP_NAME = "KilKol Knife"
 VERSION = "1.0"
 
 # ----------------------------- mode presets -----------------------------------
+# Z convention: Z0 is set at touch-off (e.g. a thin feeler/rolling-paper on top
+# of the loaded vinyl), so Z0 sits a hair ABOVE the film. Travels lift to a
+# positive z_up to clear; cutting drops to a small NEGATIVE z_down to nick the
+# film (kiss cut). Tune z_down on a scrap: shallower if it scores the backing,
+# deeper if it doesn't weed clean.
 MODES = {
     "knife-comp": dict(
         label="Knife - blade compensation", comp=True,
-        z_down=-1.5, cut_feed=800, offset=0.25, overcut=1.0),
+        z_up=2.0, z_down=-0.1, cut_feed=800, offset=0.25, overcut=1.0),
     "knife-nocomp": dict(
         label="Knife - no compensation", comp=False,
-        z_down=-1.5, cut_feed=800, offset=0.0, overcut=0.0),
+        z_up=2.0, z_down=-0.1, cut_feed=800, offset=0.0, overcut=0.0),
     "pen-draw": dict(
         label="Pen / Marker - draw (no comp)", comp=False,
-        z_down=-1.0, cut_feed=1500, offset=0.0, overcut=0.0),
+        z_up=2.0, z_down=-0.2, cut_feed=1500, offset=0.0, overcut=0.0),
 }
-Z_UP_DEFAULT = 0.0
+Z_UP_DEFAULT = 2.0
 Z_FEED_DEFAULT = 1000
 CUTOFF_DEFAULT = 20.0      # corner angle (deg) above which a swivel arc is added
 
@@ -222,7 +227,8 @@ def run_cli(argv):
     ap.add_argument("input", help="LightBurn .gc/.nc/.gcode file")
     ap.add_argument("output", help="output pen/blade g-code file")
     ap.add_argument("--mode", choices=list(MODES), default="knife-comp")
-    ap.add_argument("--z-up", type=float, default=Z_UP_DEFAULT)
+    ap.add_argument("--z-up", type=float, default=None,
+                    help="travel/retract Z (mm, positive). default per mode")
     ap.add_argument("--z-down", type=float, default=None,
                     help="plunge depth (mm, negative). default per mode")
     ap.add_argument("--cut-feed", type=int, default=None)
@@ -239,7 +245,8 @@ def run_cli(argv):
     a = ap.parse_args(argv)
     d = MODES[a.mode]
     kw = dict(
-        mode=a.mode, z_up=a.z_up,
+        mode=a.mode,
+        z_up=a.z_up if a.z_up is not None else d["z_up"],
         z_down=a.z_down if a.z_down is not None else d["z_down"],
         cut_feed=a.cut_feed if a.cut_feed is not None else d["cut_feed"],
         z_feed=a.z_feed,
@@ -319,7 +326,7 @@ def run_gui():
     pf = ttk.LabelFrame(root, text="Parameters", padding=10)
     pf.pack(fill="x", padx=10, pady=6)
     add_row(pf, "Z up (mm)", "z_up", Z_UP_DEFAULT, 0)
-    add_row(pf, "Z down / plunge (mm)", "z_down", -1.5, 1)
+    add_row(pf, "Z down / plunge (mm)", "z_down", -0.1, 1)
     add_row(pf, "Cut feed (mm/min)", "cut_feed", 800, 2)
     add_row(pf, "Z feed (mm/min)", "z_feed", Z_FEED_DEFAULT, 3)
     add_row(pf, "Blade offset (mm)", "offset", 0.25, 4)
@@ -339,6 +346,7 @@ def run_gui():
 
     def apply_mode():
         d = MODES[state["mode"].get()]
+        fields["z_up"].set(str(d["z_up"]))
         fields["z_down"].set(str(d["z_down"]))
         fields["cut_feed"].set(str(d["cut_feed"]))
         fields["offset"].set(str(d["offset"]))
