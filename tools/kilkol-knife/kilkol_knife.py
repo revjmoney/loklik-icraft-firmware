@@ -47,16 +47,16 @@ VERSION = "1.0"
 MODES = {
     "knife-comp": dict(
         label="Knife - blade compensation", comp=True,
-        z_up=0.100, z_down=-0.100, cut_feed=30, offset=0.010, overcut=0.040),
+        z_up=0.400, z_down=-0.100, cut_feed=30, offset=0.010, overcut=0.040),
     "knife-nocomp": dict(
         label="Knife - no compensation", comp=False,
-        z_up=0.100, z_down=-0.100, cut_feed=30, offset=0.0, overcut=0.0),
+        z_up=0.400, z_down=-0.100, cut_feed=30, offset=0.0, overcut=0.0),
     "pen-draw": dict(
         label="Pen / Marker - draw (no comp)", comp=False,
-        z_up=0.100, z_down=-0.020, cut_feed=60, offset=0.0, overcut=0.0),
+        z_up=0.400, z_down=-0.020, cut_feed=60, offset=0.0, overcut=0.0),
 }
-Z_UP_DEFAULT = 0.100       # inches
-Z_FEED_DEFAULT = 40        # in/min for the Z up/down moves
+Z_UP_DEFAULT = 0.400       # inches
+Z_FEED_DEFAULT = 80        # in/min for the Z up/down moves
 CUTOFF_DEFAULT = 20.0      # corner angle (deg) above which a swivel arc is added
 
 NUM = r'-?\d+\.?\d*'
