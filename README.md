@@ -1,3 +1,5 @@
+Moved: this content now lives in https://github.com/revjmoney/loklik-icraft-grbl/tree/main/firmware
+
 # LOKLiK iCraft Firmware (mirror + documentation)
 
 Open mirror of the **GPLv3** firmware that runs the **LOKLiK iCraft** cutting
